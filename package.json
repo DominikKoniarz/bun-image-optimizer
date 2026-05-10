@@ -1,0 +1,20 @@
+{
+    "name": "bun-image-optimizer",
+    "module": "src/index.ts",
+    "type": "module",
+    "scripts": {
+        "dev": "bun src/index.ts --watch",
+        "test:dev": "bun test --watch"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "prettier-plugin-organize-imports": "^4.3.0"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "sharp": "^0.34.5",
+        "zod": "^4.4.3"
+    }
+}
