@@ -1,4 +1,8 @@
-import { readFromParams } from "./parser";
+import {
+    parseImageQuality,
+    parseImageSourceUrl,
+    parseImageWidth,
+} from "./parser";
 
 const allowedImagesMimeTypes = [
     "image/jpeg",
@@ -12,40 +16,42 @@ const server = Bun.serve({
         "/image": {
             GET: async (req) => {
                 const { searchParams } = new URL(req.url);
-                const { url, width, quality } = readFromParams(searchParams);
+                const parsedUrl = parseImageSourceUrl(searchParams);
+                const parsedWidth = parseImageWidth(searchParams);
+                const parsedQuality = parseImageQuality(searchParams);
 
-                if (!url) {
+                if (!parsedUrl.valid) {
                     return Response.json(
-                        { error: "URL is required" },
-                        { status: 400 }
+                        { error: parsedUrl.error },
+                        { status: 400 },
                     );
                 }
 
-                if (!width) {
+                if (!parsedWidth.valid) {
                     return Response.json(
-                        { error: "Width is required" },
-                        { status: 400 }
+                        { error: parsedWidth.error },
+                        { status: 400 },
                     );
                 }
 
                 // TODO: maybe use some default value later
-                if (!quality) {
+                if (!parsedQuality.valid) {
                     return Response.json(
-                        { error: "Quality is required" },
-                        { status: 400 }
+                        { error: parsedQuality.error },
+                        { status: 400 },
                     );
                 }
 
-                const imageResponse = await fetch(url);
+                const imageResponse = await fetch(parsedUrl.url);
 
                 const isContentTypeAllowed = allowedImagesMimeTypes.includes(
-                    imageResponse.headers.get("content-type") ?? ""
+                    imageResponse.headers.get("content-type") ?? "",
                 );
 
                 if (!isContentTypeAllowed) {
                     return Response.json(
                         { error: "Unsupported source image content type" },
-                        { status: 400 }
+                        { status: 400 },
                     );
                 }
 

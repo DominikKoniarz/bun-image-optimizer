@@ -1,124 +1,156 @@
 import { describe, expect, test } from "bun:test";
-import { readFromParams } from "../src/parser";
+import {
+    parseImageQuality,
+    parseImageSourceUrl,
+    parseImageWidth,
+} from "../src/parser";
 
 describe("readFromParams", () => {
     describe("url", () => {
-        test("null when missing", () => {
-            const { url } = readFromParams(new URLSearchParams({}));
+        test("invalid when missing", () => {
+            const parsedUrl = parseImageSourceUrl(new URLSearchParams({}));
 
-            expect(url).toBeNull();
+            expect(parsedUrl.valid).toBeFalse();
+            expect(parsedUrl.error).toBeString();
+            expect(parsedUrl.url).toBeNull();
         });
 
-        test("null when malformed", () => {
-            const { url } = readFromParams(
+        test("invalid when malformed", () => {
+            const parsedUrl = parseImageSourceUrl(
                 new URLSearchParams({ url: "xd" }),
             );
 
-            expect(url).toBeNull();
+            expect(parsedUrl.valid).toBeFalse();
+            expect(parsedUrl.error).toBeString();
+            expect(parsedUrl.url).toBeNull();
         });
 
-        test("null when not http(s)", () => {
-            const { url } = readFromParams(
+        test("invalid when not http(s)", () => {
+            const parsedUrl = parseImageSourceUrl(
                 new URLSearchParams({ url: "xd://123.com" }),
             );
 
-            expect(url).toBeNull();
+            expect(parsedUrl.valid).toBeFalse();
+            expect(parsedUrl.error).toBeString();
+            expect(parsedUrl.url).toBeNull();
         });
 
         test("https string when valid", () => {
-            const { url } = readFromParams(
+            const parsedUrl = parseImageSourceUrl(
                 new URLSearchParams({ url: "https://example.com/path" }),
             );
 
-            expect(url).toBe("https://example.com/path");
+            expect(parsedUrl.valid).toBeTrue();
+            expect(parsedUrl.error).toBeNull();
+            expect(parsedUrl.url).toBe("https://example.com/path");
         });
 
         test("http string when valid", () => {
-            const { url } = readFromParams(
+            const parsedUrl = parseImageSourceUrl(
                 new URLSearchParams({ url: "http://example.com" }),
             );
 
-            expect(url).toBe("http://example.com");
+            expect(parsedUrl.valid).toBeTrue();
+            expect(parsedUrl.error).toBeNull();
+            expect(parsedUrl.url).toBe("http://example.com");
         });
     });
 
     describe("width (w)", () => {
-        test("null when missing", () => {
-            const { width } = readFromParams(new URLSearchParams({}));
+        test("invalid when missing", () => {
+            const parsedWidth = parseImageWidth(new URLSearchParams({}));
 
-            expect(width).toBeNull();
+            expect(parsedWidth.valid).toBeFalse();
+            expect(parsedWidth.error).toBeString();
+            expect(parsedWidth.width).toBeNull();
         });
 
-        test("null when <= 0", () => {
-            const { width } = readFromParams(
+        test("invalid when <= 0", () => {
+            const parsedWidth = parseImageWidth(
                 new URLSearchParams({ w: "0" }),
             );
 
-            expect(width).toBeNull();
+            expect(parsedWidth.valid).toBeFalse();
+            expect(parsedWidth.error).toBeString();
+            expect(parsedWidth.width).toBeNull();
         });
 
-        test("null when negative", () => {
-            const { width } = readFromParams(
+        test("invalid when negative", () => {
+            const parsedWidth = parseImageWidth(
                 new URLSearchParams({ w: "-1" }),
             );
 
-            expect(width).toBeNull();
+            expect(parsedWidth.valid).toBeFalse();
+            expect(parsedWidth.error).toBeString();
+            expect(parsedWidth.width).toBeNull();
         });
 
-        test("null when not a number", () => {
-            const { width } = readFromParams(
+        test("invalid when not a number", () => {
+            const parsedWidth = parseImageWidth(
                 new URLSearchParams({ w: "abc" }),
             );
 
-            expect(width).toBeNull();
+            expect(parsedWidth.valid).toBeFalse();
+            expect(parsedWidth.error).toBeString();
+            expect(parsedWidth.width).toBeNull();
         });
 
         test("positive integer string parses", () => {
-            const { width } = readFromParams(
+            const parsedWidth = parseImageWidth(
                 new URLSearchParams({ w: "640" }),
             );
 
-            expect(width).toBe(640);
+            expect(parsedWidth.valid).toBeTrue();
+            expect(parsedWidth.error).toBeNull();
+            expect(parsedWidth.width).toBe(640);
         });
     });
 
     describe("quality (q)", () => {
-        test("null when missing", () => {
-            const { quality } = readFromParams(new URLSearchParams({}));
+        test("invalid when missing", () => {
+            const parsedQuality = parseImageQuality(new URLSearchParams({}));
 
-            expect(quality).toBeNull();
+            expect(parsedQuality.valid).toBeFalse();
+            expect(parsedQuality.error).toBeString();
+            expect(parsedQuality.quality).toBeNull();
         });
 
-        test("null when <= 0", () => {
-            const { quality } = readFromParams(
+        test("invalid when <= 0", () => {
+            const parsedQuality = parseImageQuality(
                 new URLSearchParams({ q: "0" }),
             );
 
-            expect(quality).toBeNull();
+            expect(parsedQuality.valid).toBeFalse();
+            expect(parsedQuality.error).toBeString();
+            expect(parsedQuality.quality).toBeNull();
         });
 
-        test("null when > 100", () => {
-            const { quality } = readFromParams(
+        test("invalid when > 100", () => {
+            const parsedQuality = parseImageQuality(
                 new URLSearchParams({ q: "101" }),
             );
 
-            expect(quality).toBeNull();
+            expect(parsedQuality.valid).toBeFalse();
+            expect(parsedQuality.error).toBeString();
+            expect(parsedQuality.quality).toBeNull();
         });
 
-        test("null when not a number", () => {
-            const { quality } = readFromParams(
+        test("invalid when not a number", () => {
+            const parsedQuality = parseImageQuality(
                 new URLSearchParams({ q: "high" }),
             );
 
-            expect(quality).toBeNull();
+            expect(parsedQuality.valid).toBeFalse();
+            expect(parsedQuality.error).toBeString();
+            expect(parsedQuality.quality).toBeNull();
         });
 
         test("1 and 100 inclusive", () => {
             expect(
-                readFromParams(new URLSearchParams({ q: "1" })).quality,
+                parseImageQuality(new URLSearchParams({ q: "1" })).quality,
             ).toBe(1);
             expect(
-                readFromParams(new URLSearchParams({ q: "100" })).quality,
+                parseImageQuality(new URLSearchParams({ q: "100" })).quality,
             ).toBe(100);
         });
     });
@@ -130,11 +162,22 @@ describe("readFromParams", () => {
                 w: "800",
                 q: "85",
             });
-            const { url, width, quality } = readFromParams(params);
 
-            expect(url).toBe("https://cdn.example.com/img.png");
-            expect(width).toBe(800);
-            expect(quality).toBe(85);
+            const parsedUrl = parseImageSourceUrl(params);
+            const parsedWidth = parseImageWidth(params);
+            const parsedQuality = parseImageQuality(params);
+
+            expect(parsedUrl.valid).toBeTrue();
+            expect(parsedUrl.error).toBeNull();
+            expect(parsedUrl.url).toBe("https://cdn.example.com/img.png");
+
+            expect(parsedWidth.valid).toBeTrue();
+            expect(parsedWidth.error).toBeNull();
+            expect(parsedWidth.width).toBe(800);
+
+            expect(parsedQuality.valid).toBeTrue();
+            expect(parsedQuality.error).toBeNull();
+            expect(parsedQuality.quality).toBe(85);
         });
     });
 });
