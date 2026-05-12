@@ -50,7 +50,7 @@ export const parseImageSourceUrl = (
         return {
             valid: false,
             url: null,
-            error: urlResult.error.message,
+            error: urlResult.error.issues.at(0)?.message ?? "Unknown error",
         };
     }
 
@@ -84,7 +84,7 @@ export const parseImageWidth = (
         return {
             valid: false,
             width: null,
-            error: widthResult.error.message,
+            error: widthResult.error.issues.at(0)?.message ?? "Unknown error",
         };
     }
 
@@ -118,7 +118,7 @@ export const parseImageQuality = (
         return {
             valid: false,
             quality: null,
-            error: qualityResult.error.message,
+            error: qualityResult.error.issues.at(0)?.message ?? "Unknown error",
         };
     }
 

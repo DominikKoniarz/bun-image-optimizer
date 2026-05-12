@@ -1,15 +1,11 @@
+import { memoryUsage } from "node:process";
+import sharp from "sharp";
+import { fetchSourceImage } from "./fetcher";
 import {
     parseImageQuality,
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
-
-const allowedImagesMimeTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/avif",
-];
 
 const server = Bun.serve({
     routes: {
@@ -42,22 +38,28 @@ const server = Bun.serve({
                     );
                 }
 
-                const imageResponse = await fetch(parsedUrl.url);
+                const imageResponse = await fetchSourceImage(parsedUrl.url);
 
-                const isContentTypeAllowed = allowedImagesMimeTypes.includes(
-                    imageResponse.headers.get("content-type") ?? "",
-                );
-
-                if (!isContentTypeAllowed) {
+                if (imageResponse.error || !imageResponse.arrayBuffer) {
                     return Response.json(
-                        { error: "Unsupported source image content type" },
+                        { error: imageResponse.error }, // TODO: update this
                         { status: 400 },
                     );
                 }
 
-                const imageBuffer = await imageResponse.arrayBuffer();
+                const { width } = parsedWidth;
+                const { quality } = parsedQuality;
 
-                return new Response(imageBuffer, { status: 200 });
+                const out = sharp(imageResponse.arrayBuffer)
+                    .resize(width)
+                    .webp({ quality });
+
+                return new Response(out, {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "image/webp",
+                    },
+                });
             },
         },
     },
@@ -67,3 +69,39 @@ const server = Bun.serve({
 });
 
 console.log(`Server is listening: ${server.url}`);
+
+setInterval(() => {
+    // get memory usage in MB
+    // clear the console
+    console.clear();
+    console.log(memoryUsage().heapTotal / 1024 / 1024, "MB");
+}, 150);
+
+// {
+//     code: 23,
+//     INDEX_SIZE_ERR: 1,
+//     DOMSTRING_SIZE_ERR: 2,
+//     HIERARCHY_REQUEST_ERR: 3,
+//     WRONG_DOCUMENT_ERR: 4,
+//     INVALID_CHARACTER_ERR: 5,
+//     NO_DATA_ALLOWED_ERR: 6,
+//     NO_MODIFICATION_ALLOWED_ERR: 7,
+//     NOT_FOUND_ERR: 8,
+//     NOT_SUPPORTED_ERR: 9,
+//     INUSE_ATTRIBUTE_ERR: 10,
+//     INVALID_STATE_ERR: 11,
+//     SYNTAX_ERR: 12,
+//     INVALID_MODIFICATION_ERR: 13,
+//     NAMESPACE_ERR: 14,
+//     INVALID_ACCESS_ERR: 15,
+//     VALIDATION_ERR: 16,
+//     TYPE_MISMATCH_ERR: 17,
+//     SECURITY_ERR: 18,
+//     NETWORK_ERR: 19,
+//     ABORT_ERR: 20,
+//     URL_MISMATCH_ERR: 21,
+//     QUOTA_EXCEEDED_ERR: 22,
+//     TIMEOUT_ERR: 23,
+//     INVALID_NODE_TYPE_ERR: 24,
+//     DATA_CLONE_ERR: 25
+//   }

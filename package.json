@@ -3,8 +3,8 @@
     "module": "src/index.ts",
     "type": "module",
     "scripts": {
-        "dev": "bun src/index.ts --watch",
-        "test:dev": "bun test --watch"
+        "dev": "bun --watch src/index.ts",
+        "test:dev": "bun --watch test"
     },
     "devDependencies": {
         "@types/bun": "latest",
