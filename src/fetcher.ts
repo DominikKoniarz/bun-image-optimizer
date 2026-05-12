@@ -1,3 +1,17 @@
+const ALLOWED_MIME_TYPE = new Set([
+    "image/avif",
+    "image/bmp",
+    // "image/gif",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    // "image/svg+xml", // TODO: what about svg?
+    "image/tiff",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+]);
+
 type FetchSourceImageResult =
     | {
           error: string;
@@ -21,14 +35,21 @@ export const fetchSourceImage = async (
             };
         }
 
-        // TODO: sanitize content type, size and stuff
+        const contentType = response.headers.get("Content-Type");
+
+        if (!contentType || !ALLOWED_MIME_TYPE.has(contentType)) {
+            return {
+                error: "Unsupported or missing image content type",
+                arrayBuffer: null,
+            };
+        }
 
         return {
             error: null,
             arrayBuffer: await response.arrayBuffer(),
         };
     } catch (error) {
-        console.error(error);
+        if (process.env.NODE_ENV === "development") console.error(error);
 
         return {
             error: "Failed to fetch source image",

@@ -40,7 +40,7 @@ const server = Bun.serve({
 
                 const imageResponse = await fetchSourceImage(parsedUrl.url);
 
-                if (imageResponse.error || !imageResponse.arrayBuffer) {
+                if (imageResponse.error !== null) {
                     return Response.json(
                         { error: imageResponse.error }, // TODO: update this
                         { status: 400 },
