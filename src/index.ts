@@ -1,5 +1,4 @@
 import { memoryUsage } from "node:process";
-import sharp from "sharp";
 import { fetchSourceImage } from "./fetcher";
 import {
     parseImageQuality,
@@ -50,11 +49,11 @@ const server = Bun.serve({
                 const { width } = parsedWidth;
                 const { quality } = parsedQuality;
 
-                const out = sharp(imageResponse.arrayBuffer)
+                const image = new Bun.Image(imageResponse.arrayBuffer)
                     .resize(width)
                     .webp({ quality });
 
-                return new Response(out, {
+                return new Response(image, {
                     status: 200,
                     headers: {
                         "Content-Type": "image/webp",

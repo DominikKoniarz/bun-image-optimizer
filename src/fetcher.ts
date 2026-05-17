@@ -26,7 +26,11 @@ export const fetchSourceImage = async (
     url: string,
 ): Promise<FetchSourceImageResult> => {
     try {
-        const response = await fetch(url);
+        const timeout = AbortSignal.timeout(10000);
+
+        const response = await fetch(url, {
+            signal: timeout,
+        });
 
         if (!response.ok) {
             return {
