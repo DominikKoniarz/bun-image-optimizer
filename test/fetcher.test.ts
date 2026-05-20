@@ -1,28 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { fetchSourceImage } from "../src/fetcher";
+import { createMockHttpServer, mockServerRoutes } from "./mocks";
+import { getAvailablePort } from "./utils";
 
-const PORT = 5123;
+let mockServer: ReturnType<typeof createMockHttpServer>;
 
-let server: ReturnType<typeof Bun.serve>;
-
-beforeAll(() => {
-    const sourceImage = Bun.file(
-        `${import.meta.dir}/assets/dave-meckler-0ltzud5qqYc-unsplash.jpg`,
-    );
-
-    server = Bun.serve({
-        routes: {
-            "/source-image": () => new Response(sourceImage),
-            "/404": () => new Response("Not Found", { status: 404 }),
-            "/plain-text": () =>
-                new Response("text/plain", {
-                    headers: {
-                        "Content-Type": "text/plain",
-                    },
-                }),
-        },
-        port: PORT,
-    });
+beforeAll(async () => {
+    mockServer = createMockHttpServer(await getAvailablePort(6000));
 });
 
 describe("fetchSourceImage", () => {
@@ -34,7 +18,9 @@ describe("fetchSourceImage", () => {
     });
 
     test("returns error when not found", async () => {
-        const result = await fetchSourceImage(`http://localhost:${PORT}/404`);
+        const result = await fetchSourceImage(
+            `${mockServer.url.href}${mockServerRoutes.NOT_FOUND}`,
+        );
 
         expect(result.error).toBeString();
         expect(result.error?.length).toBeGreaterThan(0);
@@ -42,7 +28,7 @@ describe("fetchSourceImage", () => {
 
     test("returns error when invalid content type", async () => {
         const result = await fetchSourceImage(
-            `http://localhost:${PORT}/plain-text`,
+            `${mockServer?.url.href}${mockServerRoutes.PLAIN_TEXT}`,
         );
 
         expect(result.error).toBeString();
@@ -51,7 +37,7 @@ describe("fetchSourceImage", () => {
 
     test("returns arrayBuffer when valid url", async () => {
         const result = await fetchSourceImage(
-            `http://localhost:${PORT}/source-image`,
+            `${mockServer?.url.href}${mockServerRoutes.SOURCE_IMAGE}`,
         );
 
         expect(result.error).toBeNull();
@@ -60,5 +46,5 @@ describe("fetchSourceImage", () => {
 });
 
 afterAll(() => {
-    server.stop();
+    mockServer.stop();
 });
