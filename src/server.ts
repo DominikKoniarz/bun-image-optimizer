@@ -1,13 +1,37 @@
+import { eq } from "drizzle-orm";
+import path from "node:path";
+import { getImageCacheKey } from "./cache";
+import { db } from "./drizzle";
 import { fetchSourceImage } from "./fetcher";
 import {
     parseImageQuality,
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
+import { images } from "./schema";
 
 export const startServer = (port?: number) => {
     return Bun.serve({
         routes: {
+            "/test": {
+                GET: () => {
+                    const file = Bun.file(
+                        path.join(
+                            import.meta.dir,
+                            "..",
+                            "test",
+                            "assets",
+                            "dave-meckler-0ltzud5qqYc-unsplash.jpg",
+                        ),
+                    );
+
+                    return new Response(file.stream(), {
+                        headers: {
+                            "Content-Type": file.type,
+                        },
+                    });
+                },
+            },
             "/image": {
                 GET: async (req) => {
                     const { searchParams } = new URL(req.url);
@@ -36,6 +60,43 @@ export const startServer = (port?: number) => {
                         );
                     }
 
+                    const cacheKey = getImageCacheKey(
+                        parsedUrl.url,
+                        parsedWidth.width,
+                        parsedQuality.quality,
+                    );
+
+                    const parsedUrlPath = path.parse(parsedUrl.url);
+
+                    const hasExtension = parsedUrlPath.ext !== "";
+
+                    const optimizedImageName = hasExtension
+                        ? `${parsedUrlPath.name}.webp`
+                        : `${cacheKey}.webp`;
+
+                    const imageDirPath = path.join(".data", "images", cacheKey);
+                    const imagePath = path.join(
+                        imageDirPath,
+                        optimizedImageName,
+                    );
+
+                    const foundImage = await db.query.images.findFirst({
+                        where: eq(images.cacheKey, cacheKey),
+                    });
+
+                    if (foundImage && (await Bun.file(imagePath).exists())) {
+                        const file = Bun.file(imagePath);
+
+                        return new Response(file.stream(), {
+                            headers: {
+                                "Content-Type": file.type,
+                                "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
+                                "Cache-Control":
+                                    "no-cache, no-store, must-revalidate", // TODO: to be changed
+                            },
+                        });
+                    }
+
                     const imageResponse = await fetchSourceImage(parsedUrl.url);
 
                     if (imageResponse.error !== null) {
@@ -48,14 +109,36 @@ export const startServer = (port?: number) => {
                     const { width } = parsedWidth;
                     const { quality } = parsedQuality;
 
-                    const image = new Bun.Image(imageResponse.arrayBuffer)
+                    const optimizedImage = new Bun.Image(
+                        imageResponse.arrayBuffer,
+                    )
                         .resize(width)
                         .webp({ quality });
 
-                    return new Response(image, {
-                        status: 200,
+                    await Bun.write(imagePath, await optimizedImage.toBuffer());
+
+                    if (foundImage) {
+                        await db
+                            .update(images)
+                            .set({
+                                updatedAt: new Date(),
+                            })
+                            .where(eq(images.cacheKey, cacheKey));
+                    } else {
+                        await db.insert(images).values({
+                            cacheKey,
+                            sourceUrl: parsedUrl.url,
+                            width,
+                            quality,
+                        });
+                    }
+
+                    return new Response(optimizedImage, {
                         headers: {
                             "Content-Type": "image/webp",
+                            "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
+                            "Cache-Control":
+                                "no-cache, no-store, must-revalidate", // TODO: to be changed
                         },
                     });
                 },

@@ -4,16 +4,22 @@
     "type": "module",
     "scripts": {
         "dev": "bun --watch src/index.ts",
-        "test:dev": "bun --watch test"
+        "test:dev": "bun --watch test",
+        "db:push": "drizzle-kit push"
     },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.13",
         "@types/bun": "latest",
+        "@types/node": "^25.9.1",
+        "drizzle-kit": "^0.31.10",
         "prettier-plugin-organize-imports": "^4.3.0"
     },
     "peerDependencies": {
         "typescript": "^5"
     },
     "dependencies": {
+        "better-sqlite3": "^12.10.0",
+        "drizzle-orm": "^0.45.2",
         "zod": "^4.4.3"
     }
 }

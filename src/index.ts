@@ -1,4 +1,3 @@
-import { memoryUsage } from "node:process";
 import { startServer } from "./server";
 
 const parsedPort = parseInt(process.env.PORT || "");
