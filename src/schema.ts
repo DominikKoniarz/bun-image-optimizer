@@ -1,19 +1,16 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 const timestamps = {
-    createdAt: integer("created_at", {
-        mode: "timestamp_ms",
-    })
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
         .notNull()
-        .$defaultFn(() => new Date()),
-    updatedAt: integer("updated_at", {
-        mode: "timestamp_ms",
-    })
+        .defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
         .notNull()
+        .defaultNow()
         .$onUpdate(() => new Date()),
 };
 
-export const images = sqliteTable("images", {
+export const images = pgTable("images", {
     cacheKey: text("cache_key").primaryKey(),
     sourceUrl: text("source_url").notNull(),
     width: integer("width").notNull(),

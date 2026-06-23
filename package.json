@@ -5,10 +5,17 @@
     "scripts": {
         "dev": "bun --watch src/index.ts",
         "test:dev": "bun --watch test",
-        "db:push": "drizzle-kit push"
+        "compose:up": "docker compose up -d",
+        "compose:down": "docker compose down",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio"
+    },
+    "dependencies": {
+        "drizzle-orm": "^0.45.2",
+        "zod": "^4.4.3"
     },
     "devDependencies": {
-        "@types/better-sqlite3": "^7.6.13",
         "@types/bun": "latest",
         "@types/node": "^25.9.1",
         "drizzle-kit": "^0.31.10",
@@ -16,10 +23,5 @@
     },
     "peerDependencies": {
         "typescript": "^5"
-    },
-    "dependencies": {
-        "better-sqlite3": "^12.10.0",
-        "drizzle-orm": "^0.45.2",
-        "zod": "^4.4.3"
     }
 }

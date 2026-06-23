@@ -1,17 +1,12 @@
-import { drizzle } from "drizzle-orm/bun-sqlite";
-import { existsSync, mkdirSync } from "node:fs";
+import { drizzle } from "drizzle-orm/bun-sql";
 import { schema } from "./schema";
 
-// export const db = drizzle({ connection: {
-//   url: process.env.DATABASE_URL,
-//   authToken: process.env.DATABASE_AUTH_TOKEN
-// }});
+const databaseUrl = process.env.DATABASE_URL;
 
-// create .data directory if it doesn't exist
-if (!existsSync(".data")) {
-    mkdirSync(".data");
+if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required");
 }
 
-export const db = drizzle(".data/db.sqlite", {
+export const db = drizzle(databaseUrl, {
     schema,
 });
