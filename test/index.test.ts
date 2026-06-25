@@ -11,6 +11,7 @@ beforeAll(async () => {
     mockServer = createMockHttpServer(await getAvailablePort(6000));
 });
 
+// TODO: maybe integration tests don't needed?
 describe("/image", () => {
     test("returns 400 when url is invalid", async () => {
         const response = await fetch(
@@ -38,7 +39,7 @@ describe("/image", () => {
 
     test("returns 403 when source url returs invalid content type", async () => {
         const response = await fetch(
-            `${server.url.href}image?w=100&q=100&url=${mockServer.url.href}${mockServerRoutes.PLAIN_TEXT}`,
+            `${server.url.href}image?w=100&q=100&url=${new URL(mockServerRoutes.PLAIN_TEXT, mockServer.url).href}`,
         );
 
         expect(response.status).toBe(403);

@@ -1,40 +1,22 @@
-import { eq } from "drizzle-orm";
 import path from "node:path";
 import { getImageCacheKey } from "./cache";
-import { db } from "./drizzle";
+import { createImage, fetchImage, updateImage } from "./db-queries";
 import { fetchSourceImage } from "./fetcher";
+import { Lock } from "./lock";
 import {
     parseImageQuality,
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
-import { images } from "./schema";
+import { redis } from "./redis";
 
 export const startServer = (port?: number) => {
     return Bun.serve({
         routes: {
-            "/test": {
-                GET: () => {
-                    const file = Bun.file(
-                        path.join(
-                            import.meta.dir,
-                            "..",
-                            "test",
-                            "assets",
-                            "dave-meckler-0ltzud5qqYc-unsplash.jpg",
-                        ),
-                    );
-
-                    return new Response(file.stream(), {
-                        headers: {
-                            "Content-Type": file.type,
-                        },
-                    });
-                },
-            },
             "/image": {
                 GET: async (req) => {
                     const { searchParams } = new URL(req.url);
+
                     const parsedUrl = parseImageSourceUrl(searchParams);
                     const parsedWidth = parseImageWidth(searchParams);
                     const parsedQuality = parseImageQuality(searchParams);
@@ -80,14 +62,14 @@ export const startServer = (port?: number) => {
                         optimizedImageName,
                     );
 
-                    const foundImage = await db.query.images.findFirst({
-                        where: eq(images.cacheKey, cacheKey),
-                    });
+                    const image = await fetchImage(cacheKey);
 
-                    if (foundImage && (await Bun.file(imagePath).exists())) {
+                    // TODO: do we want to check if the file exists?
+                    // (await Bun.file(imagePath).exists()
+                    if (image) {
                         const file = Bun.file(imagePath);
 
-                        return new Response(file.stream(), {
+                        return new Response(file, {
                             headers: {
                                 "Content-Type": file.type,
                                 "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
@@ -97,50 +79,97 @@ export const startServer = (port?: number) => {
                         });
                     }
 
-                    const imageResponse = await fetchSourceImage(parsedUrl.url);
-
-                    if (imageResponse.error !== null) {
-                        return Response.json(
-                            { error: imageResponse.error }, // TODO: update this
-                            { status: 403 },
-                        );
-                    }
-
-                    const { width } = parsedWidth;
-                    const { quality } = parsedQuality;
-
-                    const optimizedImage = new Bun.Image(
-                        imageResponse.arrayBuffer,
-                    )
-                        .resize(width)
-                        .webp({ quality });
-
-                    await Bun.write(imagePath, await optimizedImage.toBuffer());
-
-                    if (foundImage) {
-                        await db
-                            .update(images)
-                            .set({
-                                updatedAt: new Date(),
-                            })
-                            .where(eq(images.cacheKey, cacheKey));
-                    } else {
-                        await db.insert(images).values({
-                            cacheKey,
-                            sourceUrl: parsedUrl.url,
-                            width,
-                            quality,
-                        });
-                    }
-
-                    return new Response(optimizedImage, {
-                        headers: {
-                            "Content-Type": "image/webp",
-                            "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
-                            "Cache-Control":
-                                "no-cache, no-store, must-revalidate", // TODO: to be changed
+                    const lock = new Lock({
+                        id: cacheKey,
+                        redis: redis,
+                        lease: 30_000,
+                        retry: {
+                            attempts: 1,
                         },
                     });
+
+                    const acquired = await lock.acquire();
+
+                    if (acquired) {
+                        try {
+                            const imageResponse = await fetchSourceImage(
+                                parsedUrl.url,
+                            );
+
+                            if (imageResponse.error !== null) {
+                                return Response.json(
+                                    { error: imageResponse.error }, // TODO: update this
+                                    { status: 403 },
+                                );
+                            }
+
+                            const { width } = parsedWidth;
+                            const { quality } = parsedQuality;
+
+                            const optimizedImage = new Bun.Image(
+                                imageResponse.arrayBuffer,
+                            )
+                                .resize(width)
+                                .webp({ quality });
+
+                            await Bun.write(
+                                imagePath,
+                                await optimizedImage.blob(),
+                            );
+
+                            if (image) {
+                                await updateImage(cacheKey);
+                            } else {
+                                await createImage(
+                                    cacheKey,
+                                    parsedUrl.url,
+                                    width,
+                                    quality,
+                                );
+                            }
+
+                            return new Response(optimizedImage, {
+                                headers: {
+                                    "Content-Type": "image/webp",
+                                    "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
+                                    "Cache-Control":
+                                        "no-cache, no-store, must-revalidate", // TODO: to be changed
+                                },
+                            });
+                        } finally {
+                            await lock.release();
+                        }
+                    } else {
+                        const maxWaitMs = 10_000;
+
+                        const startedAt = Date.now();
+
+                        while (Date.now() - startedAt < maxWaitMs) {
+                            const image = await fetchImage(cacheKey);
+
+                            if (image) {
+                                const file = Bun.file(imagePath);
+
+                                return new Response(file, {
+                                    headers: {
+                                        "Content-Type": file.type,
+                                        "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
+                                        "Cache-Control":
+                                            "no-cache, no-store, must-revalidate", // TODO: to be changed
+                                    },
+                                });
+                            }
+
+                            await Bun.sleep(250);
+                        }
+
+                        return Response.json(
+                            {
+                                error: "Request timed out while waiting for the resource to be processed",
+                            },
+                            { status: 408 },
+                        );
+                    }
                 },
             },
         },
