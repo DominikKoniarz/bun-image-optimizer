@@ -10,15 +10,6 @@ export const fetchImage = async (cacheKey: string) => {
     return image;
 };
 
-export const updateImage = async (cacheKey: string) => {
-    await db
-        .update(images)
-        .set({
-            updatedAt: new Date(),
-        })
-        .where(eq(images.cacheKey, cacheKey));
-};
-
 export const createImage = async (
     cacheKey: string,
     sourceUrl: string,
