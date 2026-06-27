@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Lock, LockStatus } from "../src/lock";
+import { Lock, LockStatus } from "../../src/lock";
 
 type Entry = {
     value: string;

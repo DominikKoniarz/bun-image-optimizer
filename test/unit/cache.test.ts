@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import crypto from "node:crypto";
-import { getImageCacheKey } from "../src/cache";
+import { getImageCacheKey } from "../../src/cache";
 
 describe("getImageCacheKey", () => {
     test("returns correct cache key", () => {

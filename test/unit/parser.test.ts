@@ -3,7 +3,7 @@ import {
     parseImageQuality,
     parseImageSourceUrl,
     parseImageWidth,
-} from "../src/parser";
+} from "../../src/parser";
 
 describe("parseImageSourceUrl", () => {
     test("invalid when missing", () => {

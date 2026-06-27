@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { fetchSourceImage } from "../src/fetcher";
-import { createMockHttpServer, mockServerRoutes } from "./mocks";
-import { getAvailablePort } from "./utils";
+import { fetchSourceImage } from "../../src/fetcher";
+import { createMockHttpServer, mockServerRoutes } from "../helpers/mocks";
+import { getAvailablePort } from "../helpers/utils";
 
 let mockServer: ReturnType<typeof createMockHttpServer>;
 

@@ -8,7 +8,7 @@ export const mockServerRoutes = {
 
 export const createMockHttpServer = (port?: number) => {
     const sourceImage = Bun.file(
-        `${import.meta.dir}/assets/dave-meckler-0ltzud5qqYc-unsplash.jpg`,
+        `${import.meta.dir}/../assets/dave-meckler-0ltzud5qqYc-unsplash.jpg`,
     );
 
     return Bun.serve({
