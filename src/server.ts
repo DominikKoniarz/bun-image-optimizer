@@ -1,6 +1,10 @@
 import path from "node:path";
 import { getImageCacheKey } from "./cache";
-import { createImage, fetchImage, updateImage } from "./db-queries";
+import {
+    IMAGE_PROCESSING_MAX_WAIT_MS,
+    IMAGE_PROCESSING_POLL_INTERVAL_MS,
+} from "./config";
+import { createImage, fetchImage } from "./db-queries";
 import { fetchSourceImage } from "./fetcher";
 import { Lock } from "./lock";
 import {
@@ -82,10 +86,6 @@ export const startServer = (port?: number) => {
                     const lock = new Lock({
                         id: cacheKey,
                         redis: redis,
-                        lease: 30_000,
-                        retry: {
-                            attempts: 1,
-                        },
                     });
 
                     const acquired = await lock.acquire();
@@ -112,21 +112,14 @@ export const startServer = (port?: number) => {
                                 .resize(width)
                                 .webp({ quality });
 
-                            await Bun.write(
-                                imagePath,
-                                await optimizedImage.blob(),
-                            );
+                            await optimizedImage.write(Bun.file(imagePath));
 
-                            if (image) {
-                                await updateImage(cacheKey);
-                            } else {
-                                await createImage(
-                                    cacheKey,
-                                    parsedUrl.url,
-                                    width,
-                                    quality,
-                                );
-                            }
+                            await createImage(
+                                cacheKey,
+                                parsedUrl.url,
+                                width,
+                                quality,
+                            );
 
                             return new Response(optimizedImage, {
                                 headers: {
@@ -140,11 +133,12 @@ export const startServer = (port?: number) => {
                             await lock.release();
                         }
                     } else {
-                        const maxWaitMs = 10_000;
-
                         const startedAt = Date.now();
 
-                        while (Date.now() - startedAt < maxWaitMs) {
+                        while (
+                            Date.now() - startedAt <
+                            IMAGE_PROCESSING_MAX_WAIT_MS
+                        ) {
                             const image = await fetchImage(cacheKey);
 
                             if (image) {
@@ -160,7 +154,7 @@ export const startServer = (port?: number) => {
                                 });
                             }
 
-                            await Bun.sleep(250);
+                            await Bun.sleep(IMAGE_PROCESSING_POLL_INTERVAL_MS);
                         }
 
                         return Response.json(
