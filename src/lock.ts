@@ -26,10 +26,10 @@ export type RedisCommandClient = {
     send(command: string, args: string[]): Promise<unknown>;
 };
 
-const DEFAULT_LEASE_MS = 10_000;
+const DEFAULT_LEASE_MS = 30_000;
 const DEFAULT_RETRY: LockRetryConfig = {
-    attempts: 3,
-    delay: 100,
+    attempts: 1,
+    delay: 0,
 };
 
 const RELEASE_SCRIPT = `
@@ -59,7 +59,7 @@ export class Lock {
     constructor(config: LockConfig) {
         assertPositiveInteger(config.lease ?? DEFAULT_LEASE_MS, "lease");
 
-        this.id = config.id;
+        this.id = `lock:${config.id}`;
         this.redis = config.redis;
         this.lease = config.lease ?? DEFAULT_LEASE_MS;
         this.retry = normalizeRetry(config.retry);
