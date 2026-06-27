@@ -3,6 +3,9 @@
     "module": "src/index.ts",
     "type": "module",
     "scripts": {
+        "build": "bun build src/index.ts --outdir dist --target bun --minify",
+        "compile": "bun build src/index.ts --outfile dist/bun-image-optimizer --target bun --minify --compile",
+        "start": "bun dist/index.js",
         "dev": "bun --watch src/index.ts",
         "test:dev": "bun --watch test",
         "compose:up": "docker compose up -d",
