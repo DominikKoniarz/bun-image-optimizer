@@ -5,26 +5,26 @@ export const LockStatus = {
 
 export type LockStatus = (typeof LockStatus)[keyof typeof LockStatus];
 
-export type LockRetryConfig = {
+export interface LockRetryConfig {
     attempts: number;
     delay: number;
-};
+}
 
-export type LockAcquireConfig = {
+export interface LockAcquireConfig {
     lease?: number;
     retry?: Partial<LockRetryConfig>;
-};
+}
 
-export type LockConfig = {
+export interface LockConfig {
     id: string;
     redis: RedisCommandClient;
     lease?: number;
     retry?: Partial<LockRetryConfig>;
-};
+}
 
-export type RedisCommandClient = {
+export interface RedisCommandClient {
     send(command: string, args: string[]): Promise<unknown>;
-};
+}
 
 const DEFAULT_LEASE_MS = 30_000;
 const DEFAULT_RETRY: LockRetryConfig = {

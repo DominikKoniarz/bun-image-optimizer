@@ -91,6 +91,6 @@ describe("/image", () => {
 });
 
 afterAll(() => {
-    server.stop();
-    mockServer.stop();
+    void server.stop();
+    void mockServer.stop();
 });

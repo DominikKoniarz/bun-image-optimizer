@@ -4,7 +4,9 @@ const isPortAvailable = (port: number): Promise<boolean> =>
     new Promise((resolve) => {
         const server = createServer();
 
-        server.once("error", () => resolve(false));
+        server.once("error", () => {
+            resolve(false);
+        });
 
         server.once("listening", () => {
             server.close(() => {

@@ -28,7 +28,7 @@ describe("fetchSourceImage", () => {
 
     test("returns error when invalid content type", async () => {
         const result = await fetchSourceImage(
-            `${mockServer?.url.href}${mockServerRoutes.PLAIN_TEXT}`,
+            `${mockServer.url.href}${mockServerRoutes.PLAIN_TEXT}`,
         );
 
         expect(result.error).toBeString();
@@ -37,7 +37,7 @@ describe("fetchSourceImage", () => {
 
     test("returns arrayBuffer when valid url", async () => {
         const result = await fetchSourceImage(
-            `${mockServer?.url.href}${mockServerRoutes.SOURCE_IMAGE}`,
+            `${mockServer.url.href}${mockServerRoutes.SOURCE_IMAGE}`,
         );
 
         expect(result.error).toBeNull();
@@ -46,5 +46,5 @@ describe("fetchSourceImage", () => {
 });
 
 afterAll(() => {
-    mockServer.stop();
+    void mockServer.stop();
 });

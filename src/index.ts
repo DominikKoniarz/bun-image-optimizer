@@ -1,11 +1,11 @@
 import { startServer } from "./server";
 
-const parsedPort = parseInt(process.env.PORT || "");
+const parsedPort = parseInt(process.env.PORT ?? "");
 const port = isNaN(parsedPort) ? undefined : parsedPort;
 
 const server = startServer(port);
 
-console.log(`Server is listening: ${server.url}`);
+console.log(`Server is listening: ${server.url.href}`);
 
 // setInterval(() => {
 //     // get memory usage in MB

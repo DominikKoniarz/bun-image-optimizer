@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { Lock, LockStatus } from "../../src/lock";
 
-type Entry = {
+interface Entry {
     value: string;
     expiresAt: number;
-};
+}
 
 class FakeRedis {
     private readonly entries = new Map<string, Entry>();
@@ -16,6 +16,8 @@ class FakeRedis {
 
     async send(command: string, args: string[]): Promise<unknown> {
         this.deleteExpired();
+
+        await Bun.sleep(0);
 
         switch (command) {
             case "SET":
