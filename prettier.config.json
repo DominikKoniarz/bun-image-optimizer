@@ -1,7 +1,9 @@
 {
+    "$schema": "https://www.schemastore.org/prettierrc.json",
     "useTabs": false,
     "tabWidth": 4,
     "semi": true,
     "plugins": ["prettier-plugin-organize-imports"],
-    "organizeImportsSkipDestructiveCodeActions": true
+    "organizeImportsSkipDestructiveCodeActions": true,
+    "trailingComma": "es5"
 }
