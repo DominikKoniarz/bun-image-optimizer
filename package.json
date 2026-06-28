@@ -7,7 +7,7 @@
         "compile": "bun build src/index.ts --outfile dist/bun-image-optimizer --target bun --minify --compile",
         "start": "bun dist/index.js",
         "lint": "eslint --max-warnings=0",
-        "format": "prettier --write .",
+        "format": "prettier --write --config prettier.config.json .",
         "dev": "bun --watch src/index.ts",
         "test": "bun run test:unit",
         "test:unit": "bun test ./test/unit",
