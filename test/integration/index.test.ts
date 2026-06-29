@@ -9,7 +9,12 @@ import {
 import { getImageCacheKey } from "../../src/cache";
 import { fetchImage } from "../../src/db-queries";
 import { startServer } from "../../src/server";
-import { createMockHttpServer, mockServerRoutes } from "../helpers/mocks";
+import {
+    createMockHttpServer,
+    getSlowImageRequestCount,
+    mockServerRoutes,
+    resetSlowImageRequestCount,
+} from "../helpers/mocks";
 import { getAvailablePort } from "../helpers/utils";
 import { cleanTestState } from "./cleanup";
 
@@ -22,6 +27,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+    resetSlowImageRequestCount();
+
     await cleanTestState();
 });
 
@@ -56,6 +63,25 @@ describe("/image", () => {
         );
 
         expect(response.status).toBe(403);
+    });
+
+    test("concurrent requests wait when image is being processed", async () => {
+        const width = 500;
+        const quality = 80;
+
+        const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${new URL(mockServerRoutes.SOURCE_IMAGE_SLOW, mockServer.url).href}`;
+
+        const firstRequest = fetch(requestUrl);
+        const secondRequest = fetch(requestUrl);
+        const thirdRequest = fetch(requestUrl);
+
+        const [firstResponse, secondResponse, thirdResponse] =
+            await Promise.all([firstRequest, secondRequest, thirdRequest]);
+
+        expect(firstResponse.status).toBe(200);
+        expect(secondResponse.status).toBe(200);
+        expect(thirdResponse.status).toBe(200);
+        expect(getSlowImageRequestCount()).toBe(1);
     });
 
     test("returns optimized webp image", async () => {
