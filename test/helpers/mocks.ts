@@ -4,7 +4,13 @@ export const mockServerRoutes = {
     SOURCE_IMAGE: "/source-image",
     NOT_FOUND: "/404",
     PLAIN_TEXT: "/plain-text",
+    SOURCE_IMAGE_SLOW: "/source-image-slow",
 };
+
+let slowImageRequestCount = 0;
+
+export const getSlowImageRequestCount = () => slowImageRequestCount;
+export const resetSlowImageRequestCount = () => (slowImageRequestCount = 0);
 
 export const createMockHttpServer = (port?: number) => {
     const sourceImage = Bun.file(
@@ -17,11 +23,18 @@ export const createMockHttpServer = (port?: number) => {
             [mockServerRoutes.NOT_FOUND]: () =>
                 new Response("Not Found", { status: 404 }),
             [mockServerRoutes.PLAIN_TEXT]: () =>
-                new Response("text/plain", {
+                new Response("Plain text", {
                     headers: {
                         "Content-Type": "text/plain",
                     },
                 }),
+            [mockServerRoutes.SOURCE_IMAGE_SLOW]: async () => {
+                slowImageRequestCount++;
+
+                await Bun.sleep(500);
+
+                return new Response(sourceImage);
+            },
         },
         port: port ?? INITIAL_MOCK_PORT,
     });
