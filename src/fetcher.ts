@@ -41,6 +41,7 @@ export const fetchSourceImage = async (
 
         const contentType = response.headers.get("Content-Type");
 
+        // TODO: what about image/jpeg; charset=utf-8 here?
         if (!contentType || !ALLOWED_MIME_TYPE.has(contentType)) {
             return {
                 error: "Unsupported or missing image content type",
