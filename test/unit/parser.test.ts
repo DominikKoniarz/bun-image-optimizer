@@ -4,13 +4,14 @@ import {
     parseImageSourceUrl,
     parseImageWidth,
 } from "../../src/parser";
+import { expectAppError } from "../helpers/utils";
 
 describe("parseImageSourceUrl", () => {
     test("invalid when missing", () => {
         const parsedUrl = parseImageSourceUrl(new URLSearchParams({}));
 
         expect(parsedUrl.valid).toBeFalse();
-        expect(parsedUrl.error).toBeString();
+        expectAppError(parsedUrl.error, "INVALID_URL");
         expect(parsedUrl.url).toBeNull();
     });
 
@@ -20,7 +21,7 @@ describe("parseImageSourceUrl", () => {
         );
 
         expect(parsedUrl.valid).toBeFalse();
-        expect(parsedUrl.error).toBeString();
+        expectAppError(parsedUrl.error, "INVALID_URL");
         expect(parsedUrl.url).toBeNull();
     });
 
@@ -30,7 +31,7 @@ describe("parseImageSourceUrl", () => {
         );
 
         expect(parsedUrl.valid).toBeFalse();
-        expect(parsedUrl.error).toBeString();
+        expectAppError(parsedUrl.error, "INVALID_URL");
         expect(parsedUrl.url).toBeNull();
     });
 
@@ -60,7 +61,7 @@ describe("parseImageWidth", () => {
         const parsedWidth = parseImageWidth(new URLSearchParams({}));
 
         expect(parsedWidth.valid).toBeFalse();
-        expect(parsedWidth.error).toBeString();
+        expectAppError(parsedWidth.error, "INVALID_WIDTH");
         expect(parsedWidth.width).toBeNull();
     });
 
@@ -68,7 +69,7 @@ describe("parseImageWidth", () => {
         const parsedWidth = parseImageWidth(new URLSearchParams({ w: "0" }));
 
         expect(parsedWidth.valid).toBeFalse();
-        expect(parsedWidth.error).toBeString();
+        expectAppError(parsedWidth.error, "INVALID_WIDTH");
         expect(parsedWidth.width).toBeNull();
     });
 
@@ -76,7 +77,7 @@ describe("parseImageWidth", () => {
         const parsedWidth = parseImageWidth(new URLSearchParams({ w: "-1" }));
 
         expect(parsedWidth.valid).toBeFalse();
-        expect(parsedWidth.error).toBeString();
+        expectAppError(parsedWidth.error, "INVALID_WIDTH");
         expect(parsedWidth.width).toBeNull();
     });
 
@@ -84,7 +85,7 @@ describe("parseImageWidth", () => {
         const parsedWidth = parseImageWidth(new URLSearchParams({ w: "abc" }));
 
         expect(parsedWidth.valid).toBeFalse();
-        expect(parsedWidth.error).toBeString();
+        expectAppError(parsedWidth.error, "INVALID_WIDTH");
         expect(parsedWidth.width).toBeNull();
     });
 
@@ -102,7 +103,7 @@ describe("parseImageQuality", () => {
         const parsedQuality = parseImageQuality(new URLSearchParams({}));
 
         expect(parsedQuality.valid).toBeFalse();
-        expect(parsedQuality.error).toBeString();
+        expectAppError(parsedQuality.error, "INVALID_QUALITY");
         expect(parsedQuality.quality).toBeNull();
     });
 
@@ -112,7 +113,7 @@ describe("parseImageQuality", () => {
         );
 
         expect(parsedQuality.valid).toBeFalse();
-        expect(parsedQuality.error).toBeString();
+        expectAppError(parsedQuality.error, "INVALID_QUALITY");
         expect(parsedQuality.quality).toBeNull();
     });
 
@@ -122,7 +123,7 @@ describe("parseImageQuality", () => {
         );
 
         expect(parsedQuality.valid).toBeFalse();
-        expect(parsedQuality.error).toBeString();
+        expectAppError(parsedQuality.error, "INVALID_QUALITY");
         expect(parsedQuality.quality).toBeNull();
     });
 
@@ -132,7 +133,7 @@ describe("parseImageQuality", () => {
         );
 
         expect(parsedQuality.valid).toBeFalse();
-        expect(parsedQuality.error).toBeString();
+        expectAppError(parsedQuality.error, "INVALID_QUALITY");
         expect(parsedQuality.quality).toBeNull();
     });
 
