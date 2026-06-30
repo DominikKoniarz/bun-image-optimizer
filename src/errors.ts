@@ -21,5 +21,14 @@ export function appError(code: ErrorCode, message: string): AppError {
 }
 
 export function toErrorResponse(error: AppError, status: number): Response {
-    return Response.json({ error }, { status });
+    return Response.json(
+        { error },
+        {
+            status,
+            headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        },
+    );
 }

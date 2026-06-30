@@ -5,6 +5,7 @@ import {
     IMAGE_PROCESSING_POLL_INTERVAL_MS,
 } from "./config";
 import { createImage, fetchImage } from "./db-queries";
+import { appError, toErrorResponse } from "./errors";
 import { fetchSourceImage } from "./fetcher";
 import { Lock } from "./lock";
 import {
@@ -26,24 +27,15 @@ export const startServer = (port?: number) => {
                     const parsedQuality = parseImageQuality(searchParams);
 
                     if (!parsedUrl.valid) {
-                        return Response.json(
-                            { error: parsedUrl.error },
-                            { status: 400 },
-                        );
+                        return toErrorResponse(parsedUrl.error, 400);
                     }
 
                     if (!parsedWidth.valid) {
-                        return Response.json(
-                            { error: parsedWidth.error },
-                            { status: 400 },
-                        );
+                        return toErrorResponse(parsedWidth.error, 400);
                     }
 
                     if (!parsedQuality.valid) {
-                        return Response.json(
-                            { error: parsedQuality.error },
-                            { status: 400 },
-                        );
+                        return toErrorResponse(parsedQuality.error, 400);
                     }
 
                     const cacheKey = getImageCacheKey(
@@ -97,9 +89,9 @@ export const startServer = (port?: number) => {
                             );
 
                             if (imageResponse.error !== null) {
-                                return Response.json(
-                                    { error: imageResponse.error }, // TODO: update this
-                                    { status: 403 },
+                                return toErrorResponse(
+                                    imageResponse.error,
+                                    403,
                                 );
                             }
 
@@ -157,18 +149,25 @@ export const startServer = (port?: number) => {
                             await Bun.sleep(IMAGE_PROCESSING_POLL_INTERVAL_MS);
                         }
 
-                        return Response.json(
-                            {
-                                error: "Request timed out while waiting for the resource to be processed",
-                            },
-                            { status: 408 },
+                        return toErrorResponse(
+                            appError(
+                                "PROCESSING_TIMEOUT",
+                                "Request timed out while waiting for the resource to be processed",
+                            ),
+                            408,
                         );
                     }
                 },
             },
         },
         fetch() {
-            return new Response("Not Found", { status: 404 });
+            return toErrorResponse(appError("NOT_FOUND", "Not Found"), 404);
+        },
+        error() {
+            return toErrorResponse(
+                appError("INTERNAL_ERROR", "An unexpected error occurred"),
+                500,
+            );
         },
         port,
     });
