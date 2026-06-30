@@ -164,6 +164,8 @@ export const startServer = (port?: number) => {
             return toErrorResponse(appError("NOT_FOUND", "Not Found"), 404);
         },
         error() {
+            // TODO: maybe format of sth
+
             return toErrorResponse(
                 appError("INTERNAL_ERROR", "An unexpected error occurred"),
                 500,
