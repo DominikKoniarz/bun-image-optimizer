@@ -11,7 +11,7 @@
         "dev": "bun --watch src/index.ts",
         "test": "bun run test:unit",
         "test:unit": "bun test ./test/unit",
-        "test:unit:dev": "bun --watch test/unit",
+        "test:unit:dev": "bun test ./test/unit --watch",
         "test:integration": "bun test --env-file=.env.test --preload ./test/integration/setup.ts test/integration",
         "test:integration:dev": "bun test --env-file=.env.test --preload ./test/integration/setup.ts --watch test/integration",
         "test:integration:up": "docker compose -f docker-compose.test.yml --env-file .env.test up -d --wait",

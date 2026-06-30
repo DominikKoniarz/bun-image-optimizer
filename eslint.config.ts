@@ -26,6 +26,12 @@ export default defineConfig([
         },
     },
     {
+        files: ["test/**/*.{ts,test.ts}"],
+        rules: {
+            "@typescript-eslint/no-unsafe-assignment": "off",
+        },
+    },
+    {
         languageOptions: {
             parserOptions: {
                 projectService: true,

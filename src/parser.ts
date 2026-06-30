@@ -1,4 +1,5 @@
 import { coerce, z } from "zod/mini";
+import { type AppError, appError } from "./errors";
 
 const urlSchema = z.url({
     protocol: new RegExp("^(http|https)$"), // http or https
@@ -36,7 +37,7 @@ type ParsedImageSourceURLResult =
     | {
           valid: false;
           url: null;
-          error: string;
+          error: AppError;
       };
 
 export const parseImageSourceUrl = (
@@ -50,7 +51,10 @@ export const parseImageSourceUrl = (
         return {
             valid: false,
             url: null,
-            error: urlResult.error.issues.at(0)?.message ?? "Unknown error",
+            error: appError(
+                "INVALID_URL",
+                urlResult.error.issues.at(0)?.message ?? "Validation failed",
+            ),
         };
     }
 
@@ -70,7 +74,7 @@ type ParsedImageWidthResult =
     | {
           valid: false;
           width: null;
-          error: string;
+          error: AppError;
       };
 
 export const parseImageWidth = (
@@ -84,7 +88,10 @@ export const parseImageWidth = (
         return {
             valid: false,
             width: null,
-            error: widthResult.error.issues.at(0)?.message ?? "Unknown error",
+            error: appError(
+                "INVALID_WIDTH",
+                widthResult.error.issues.at(0)?.message ?? "Validation failed",
+            ),
         };
     }
 
@@ -104,7 +111,7 @@ type ParsedImageQualityResult =
     | {
           valid: false;
           quality: null;
-          error: string;
+          error: AppError;
       };
 
 export const parseImageQuality = (
@@ -118,7 +125,10 @@ export const parseImageQuality = (
         return {
             valid: false,
             quality: null,
-            error: qualityResult.error.issues.at(0)?.message ?? "Unknown error",
+            error: appError(
+                "INVALID_QUALITY",
+                qualityResult.error.issues.at(0)?.message ?? "Validation failed",
+            ),
         };
     }
 

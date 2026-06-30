@@ -12,9 +12,11 @@ const ALLOWED_MIME_TYPE = new Set([
     "image/heif",
 ]);
 
+import { type AppError, appError } from "./errors";
+
 type FetchSourceImageResult =
     | {
-          error: string;
+          error: AppError;
           arrayBuffer: null;
       }
     | {
@@ -34,16 +36,20 @@ export const fetchSourceImage = async (
 
         if (!response.ok) {
             return {
-                error: "Failed to fetch source image",
+                error: appError("SOURCE_FETCH_FAILED", "Failed to fetch source image"),
                 arrayBuffer: null,
             };
         }
 
         const contentType = response.headers.get("Content-Type");
 
+        // TODO: what about image/jpeg; charset=utf-8 here?
         if (!contentType || !ALLOWED_MIME_TYPE.has(contentType)) {
             return {
-                error: "Unsupported or missing image content type",
+                error: appError(
+                    "SOURCE_UNSUPPORTED_CONTENT_TYPE",
+                    "Unsupported or missing image content type",
+                ),
                 arrayBuffer: null,
             };
         }
@@ -52,11 +58,16 @@ export const fetchSourceImage = async (
             error: null,
             arrayBuffer: await response.arrayBuffer(),
         };
-    } catch (error) {
-        if (process.env.NODE_ENV === "development") console.error(error);
+    } catch (err) {
+        if (process.env.NODE_ENV === "development") console.error(err);
+
+        const message =
+            err instanceof DOMException && err.name === "TimeoutError"
+                ? "Source image fetch timed out"
+                : "Failed to fetch source image";
 
         return {
-            error: "Failed to fetch source image",
+            error: appError("SOURCE_FETCH_FAILED", message),
             arrayBuffer: null,
         };
     }

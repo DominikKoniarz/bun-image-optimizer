@@ -1,4 +1,6 @@
+import { expect } from "bun:test";
 import { createServer } from "node:net";
+import type { ErrorCode } from "../../src/errors";
 
 const isPortAvailable = (port: number): Promise<boolean> =>
     new Promise((resolve) => {
@@ -31,4 +33,8 @@ export const getAvailablePort = async (
     }
 
     throw new Error(`No available port found starting from ${initialPort}`);
+};
+
+export const expectAppError = (error: unknown, code: ErrorCode) => {
+    expect(error).toMatchObject({ code, message: expect.any(String) });
 };

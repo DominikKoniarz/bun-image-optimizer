@@ -15,7 +15,7 @@ import {
     mockServerRoutes,
     resetSlowImageRequestCount,
 } from "../helpers/mocks";
-import { getAvailablePort } from "../helpers/utils";
+import { expectAppError, getAvailablePort } from "../helpers/utils";
 import { cleanTestState } from "./cleanup";
 
 let server: ReturnType<typeof startServer>;
@@ -39,6 +39,8 @@ describe("/image", () => {
         );
 
         expect(response.status).toBe(400);
+        const body = (await response.json()) as { error: unknown };
+        expectAppError(body.error, "INVALID_URL");
     });
 
     test("returns 400 when width is invalid", async () => {
@@ -47,6 +49,8 @@ describe("/image", () => {
         );
 
         expect(response.status).toBe(400);
+        const body = (await response.json()) as { error: unknown };
+        expectAppError(body.error, "INVALID_WIDTH");
     });
 
     test("returns 400 when quality is invalid", async () => {
@@ -55,6 +59,8 @@ describe("/image", () => {
         );
 
         expect(response.status).toBe(400);
+        const body = (await response.json()) as { error: unknown };
+        expectAppError(body.error, "INVALID_QUALITY");
     });
 
     test("returns 403 when source url returns invalid content type", async () => {
@@ -63,6 +69,8 @@ describe("/image", () => {
         );
 
         expect(response.status).toBe(403);
+        const body = (await response.json()) as { error: unknown };
+        expectAppError(body.error, "SOURCE_UNSUPPORTED_CONTENT_TYPE");
     });
 
     test("concurrent requests wait when image is being processed", async () => {
