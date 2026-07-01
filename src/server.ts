@@ -163,8 +163,8 @@ export const startServer = (port?: number) => {
         fetch() {
             return toErrorResponse(appError("NOT_FOUND", "Not Found"), 404);
         },
-        error() {
-            // TODO: maybe format of sth
+        error(error) {
+            console.log("An unexpected error occurred", error);
 
             return toErrorResponse(
                 appError("INTERNAL_ERROR", "An unexpected error occurred"),
