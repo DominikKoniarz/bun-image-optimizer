@@ -7,6 +7,11 @@ export const mockServerRoutes = {
     SOURCE_IMAGE_SLOW: "/source-image-slow",
 };
 
+let sourceImageRequestCount = 0;
+
+export const getSourceImageRequestCount = () => sourceImageRequestCount;
+export const resetSourceImageRequestCount = () => (sourceImageRequestCount = 0);
+
 let slowImageRequestCount = 0;
 
 export const getSlowImageRequestCount = () => slowImageRequestCount;
@@ -19,7 +24,11 @@ export const createMockHttpServer = (port?: number) => {
 
     return Bun.serve({
         routes: {
-            [mockServerRoutes.SOURCE_IMAGE]: () => new Response(sourceImage),
+            [mockServerRoutes.SOURCE_IMAGE]: () => {
+                sourceImageRequestCount++;
+
+                return new Response(sourceImage);
+            },
             [mockServerRoutes.NOT_FOUND]: () =>
                 new Response("Not Found", { status: 404 }),
             [mockServerRoutes.PLAIN_TEXT]: () =>
