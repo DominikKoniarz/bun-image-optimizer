@@ -16,13 +16,13 @@ import {
     resetSlowImageRequestCount,
 } from "../helpers/mocks";
 import { expectAppError, getAvailablePort } from "../helpers/utils";
-import { cleanTestState } from "./cleanup";
+import { cleanTestState, getTestConfig } from "./cleanup";
 
 let server: ReturnType<typeof startServer>;
 let mockServer: ReturnType<typeof createMockHttpServer>;
 
 beforeAll(async () => {
-    server = startServer(await getAvailablePort(5000));
+    server = startServer(await getTestConfig());
     mockServer = createMockHttpServer(await getAvailablePort(6000));
 });
 

@@ -1,8 +1,10 @@
 import path from "node:path";
 import { getImageCacheKey } from "./cache";
 import {
+    getConfig,
     IMAGE_PROCESSING_MAX_WAIT_MS,
     IMAGE_PROCESSING_POLL_INTERVAL_MS,
+    type Config,
 } from "./config";
 import { createImage, fetchImage } from "./db-queries";
 import { appError, toErrorResponse } from "./errors";
@@ -15,7 +17,9 @@ import {
 } from "./parser";
 import { redis } from "./redis";
 
-export const startServer = (port?: number) => {
+export const startServer = (config?: Partial<Config>) => {
+    const { port, dataDir } = getConfig(config);
+
     return Bun.serve({
         routes: {
             "/image": {
@@ -52,7 +56,7 @@ export const startServer = (port?: number) => {
                         ? `${parsedUrlPath.name}.webp`
                         : `${cacheKey}.webp`;
 
-                    const imageDirPath = path.join(".data", "images", cacheKey);
+                    const imageDirPath = path.join(dataDir, "images", cacheKey);
                     const imagePath = path.join(
                         imageDirPath,
                         optimizedImageName,
