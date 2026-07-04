@@ -10,6 +10,7 @@
         "format": "prettier --write --config prettier.config.json .",
         "dev": "bun --watch src/index.ts",
         "test": "bun run test:unit",
+        "test:dev": "bun run test:unit:dev",
         "test:unit": "bun test ./test/unit",
         "test:unit:dev": "bun test ./test/unit --watch",
         "test:integration": "bun test --env-file=.env.test --preload ./test/integration/setup.ts test/integration",

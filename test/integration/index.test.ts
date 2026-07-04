@@ -7,26 +7,31 @@ import {
     test,
 } from "bun:test";
 import { getImageCacheKey } from "../../src/cache";
-import { fetchImage } from "../../src/db-queries";
+import { createImage, fetchImage } from "../../src/db-queries";
+import { Lock } from "../../src/lock";
+import { redis } from "../../src/redis";
 import { startServer } from "../../src/server";
 import {
     createMockHttpServer,
     getSlowImageRequestCount,
+    getSourceImageRequestCount,
     mockServerRoutes,
     resetSlowImageRequestCount,
+    resetSourceImageRequestCount,
 } from "../helpers/mocks";
 import { expectAppError, getAvailablePort } from "../helpers/utils";
-import { cleanTestState } from "./cleanup";
+import { cleanTestState, getTestConfig } from "./cleanup";
 
 let server: ReturnType<typeof startServer>;
 let mockServer: ReturnType<typeof createMockHttpServer>;
 
 beforeAll(async () => {
-    server = startServer(await getAvailablePort(5000));
+    server = startServer(await getTestConfig());
     mockServer = createMockHttpServer(await getAvailablePort(6000));
 });
 
 beforeEach(async () => {
+    resetSourceImageRequestCount();
     resetSlowImageRequestCount();
 
     await cleanTestState();
@@ -73,25 +78,6 @@ describe("/image", () => {
         expectAppError(body.error, "SOURCE_UNSUPPORTED_CONTENT_TYPE");
     });
 
-    test("concurrent requests wait when image is being processed", async () => {
-        const width = 500;
-        const quality = 80;
-
-        const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${new URL(mockServerRoutes.SOURCE_IMAGE_SLOW, mockServer.url).href}`;
-
-        const firstRequest = fetch(requestUrl);
-        const secondRequest = fetch(requestUrl);
-        const thirdRequest = fetch(requestUrl);
-
-        const [firstResponse, secondResponse, thirdResponse] =
-            await Promise.all([firstRequest, secondRequest, thirdRequest]);
-
-        expect(firstResponse.status).toBe(200);
-        expect(secondResponse.status).toBe(200);
-        expect(thirdResponse.status).toBe(200);
-        expect(getSlowImageRequestCount()).toBe(1);
-    });
-
     test("returns optimized webp image", async () => {
         const sourceUrl = new URL(mockServerRoutes.SOURCE_IMAGE, mockServer.url)
             .href;
@@ -121,6 +107,72 @@ describe("/image", () => {
         expect(imageData?.sourceUrl).toBe(sourceUrl);
         expect(imageData?.width).toBe(width);
         expect(imageData?.quality).toBe(quality);
+    });
+
+    test("concurrent requests wait when image is being processed", async () => {
+        const width = 500;
+        const quality = 80;
+
+        const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${new URL(mockServerRoutes.SOURCE_IMAGE_SLOW, mockServer.url).href}`;
+
+        const firstRequest = fetch(requestUrl);
+        const secondRequest = fetch(requestUrl);
+        const thirdRequest = fetch(requestUrl);
+
+        const [firstResponse, secondResponse, thirdResponse] =
+            await Promise.all([firstRequest, secondRequest, thirdRequest]);
+
+        expect(firstResponse.status).toBe(200);
+        expect(secondResponse.status).toBe(200);
+        expect(thirdResponse.status).toBe(200);
+        expect(getSlowImageRequestCount()).toBe(1);
+    });
+
+    test("returns cached image when it exists", async () => {
+        const width = 500;
+        const quality = 80;
+
+        const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${new URL(mockServerRoutes.SOURCE_IMAGE, mockServer.url).href}`;
+
+        const response = await fetch(requestUrl);
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe("image/webp");
+        expect(getSourceImageRequestCount()).toBe(1);
+
+        const secondResponse = await fetch(requestUrl);
+        expect(secondResponse.status).toBe(200);
+        expect(secondResponse.headers.get("Content-Type")).toBe("image/webp");
+        expect(getSourceImageRequestCount()).toBe(1);
+    });
+
+    test("returns 404 OPTIMIZED_IMAGE_NOT_FOUND on lock-wait path when file missing", async () => {
+        const width = 500;
+        const quality = 80;
+        const sourceUrl = new URL(mockServerRoutes.SOURCE_IMAGE, mockServer.url)
+            .href;
+
+        const cacheKey = getImageCacheKey(sourceUrl, width, quality);
+        await createImage(cacheKey, sourceUrl, width, quality);
+
+        // acquire a lock so server will think the image is being processed
+        const lock = new Lock({
+            id: cacheKey,
+            redis: redis,
+        });
+
+        expect(await lock.acquire()).toBe(true);
+
+        try {
+            const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${encodeURIComponent(sourceUrl)}`;
+
+            const response = await fetch(requestUrl);
+            expect(response.status).toBe(404);
+
+            const body = (await response.json()) as { error: unknown };
+            expectAppError(body.error, "OPTIMIZED_IMAGE_NOT_FOUND");
+        } finally {
+            await lock.release();
+        }
     });
 });
 

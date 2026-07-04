@@ -1,8 +1,10 @@
 import path from "node:path";
 import { getImageCacheKey } from "./cache";
 import {
+    getConfig,
     IMAGE_PROCESSING_MAX_WAIT_MS,
     IMAGE_PROCESSING_POLL_INTERVAL_MS,
+    type Config,
 } from "./config";
 import { createImage, fetchImage } from "./db-queries";
 import { appError, toErrorResponse } from "./errors";
@@ -15,7 +17,9 @@ import {
 } from "./parser";
 import { redis } from "./redis";
 
-export const startServer = (port?: number) => {
+export const startServer = (config?: Partial<Config>) => {
+    const { port, dataDir } = getConfig(config);
+
     return Bun.serve({
         routes: {
             "/image": {
@@ -52,7 +56,7 @@ export const startServer = (port?: number) => {
                         ? `${parsedUrlPath.name}.webp`
                         : `${cacheKey}.webp`;
 
-                    const imageDirPath = path.join(".data", "images", cacheKey);
+                    const imageDirPath = path.join(dataDir, "images", cacheKey);
                     const imagePath = path.join(
                         imageDirPath,
                         optimizedImageName,
@@ -60,11 +64,9 @@ export const startServer = (port?: number) => {
 
                     const image = await fetchImage(cacheKey);
 
-                    // TODO: do we want to check if the file exists?
-                    // (await Bun.file(imagePath).exists()
-                    if (image) {
-                        const file = Bun.file(imagePath);
+                    const file = Bun.file(imagePath);
 
+                    if (image && (await file.exists())) {
                         return new Response(file, {
                             headers: {
                                 "Content-Type": file.type,
@@ -135,6 +137,17 @@ export const startServer = (port?: number) => {
 
                             if (image) {
                                 const file = Bun.file(imagePath);
+
+                                // we expect the file so if there is no file we return an error
+                                if (!(await file.exists())) {
+                                    return toErrorResponse(
+                                        appError(
+                                            "OPTIMIZED_IMAGE_NOT_FOUND",
+                                            "Optimized image not found",
+                                        ),
+                                        404,
+                                    );
+                                }
 
                                 return new Response(file, {
                                     headers: {
