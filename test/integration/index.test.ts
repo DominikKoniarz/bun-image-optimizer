@@ -7,7 +7,9 @@ import {
     test,
 } from "bun:test";
 import { getImageCacheKey } from "../../src/cache";
-import { fetchImage } from "../../src/db-queries";
+import { createImage, fetchImage } from "../../src/db-queries";
+import { Lock } from "../../src/lock";
+import { redis } from "../../src/redis";
 import { startServer } from "../../src/server";
 import {
     createMockHttpServer,
@@ -141,6 +143,36 @@ describe("/image", () => {
         expect(secondResponse.status).toBe(200);
         expect(secondResponse.headers.get("Content-Type")).toBe("image/webp");
         expect(getSourceImageRequestCount()).toBe(1);
+    });
+
+    test("returns 404 OPTIMIZED_IMAGE_NOT_FOUND on lock-wait path when file missing", async () => {
+        const width = 500;
+        const quality = 80;
+        const sourceUrl = new URL(mockServerRoutes.SOURCE_IMAGE, mockServer.url)
+            .href;
+
+        const cacheKey = getImageCacheKey(sourceUrl, width, quality);
+        await createImage(cacheKey, sourceUrl, width, quality);
+
+        // acquire a lock so server will think the image is being processed
+        const lock = new Lock({
+            id: cacheKey,
+            redis: redis,
+        });
+
+        expect(await lock.acquire()).toBe(true);
+
+        try {
+            const requestUrl = `${server.url.href}image?w=${width}&q=${quality}&url=${encodeURIComponent(sourceUrl)}`;
+
+            const response = await fetch(requestUrl);
+            expect(response.status).toBe(404);
+
+            const body = (await response.json()) as { error: unknown };
+            expectAppError(body.error, "OPTIMIZED_IMAGE_NOT_FOUND");
+        } finally {
+            await lock.release();
+        }
     });
 });
 
