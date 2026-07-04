@@ -1,3 +1,5 @@
+import { getRedisCacheKey } from "./cache";
+
 export const LockStatus = {
     ACQUIRED: "ACQUIRED",
     FREE: "FREE",
@@ -59,7 +61,7 @@ export class Lock {
     constructor(config: LockConfig) {
         assertPositiveInteger(config.lease ?? DEFAULT_LEASE_MS, "lease");
 
-        this.id = `lock:${config.id}`;
+        this.id = getRedisCacheKey("lock", config.id);
         this.redis = config.redis;
         this.lease = config.lease ?? DEFAULT_LEASE_MS;
         this.retry = normalizeRetry(config.retry);

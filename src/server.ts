@@ -6,7 +6,6 @@ import {
     IMAGE_PROCESSING_POLL_INTERVAL_MS,
     type Config,
 } from "./config";
-import { createImage, fetchImage } from "./db-queries";
 import { appError, toErrorResponse } from "./errors";
 import { fetchSourceImage } from "./fetcher";
 import { Lock } from "./lock";
@@ -15,6 +14,7 @@ import {
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
+import { createImage, fetchImage } from "./queries";
 import { redis } from "./redis";
 
 export const startServer = (config?: Partial<Config>) => {
