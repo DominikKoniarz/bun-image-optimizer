@@ -1,4 +1,4 @@
-import { getRedisCacheKey } from "./cache";
+import { getRedisCacheKey } from "./cache-key";
 
 export const LockStatus = {
     ACQUIRED: "ACQUIRED",

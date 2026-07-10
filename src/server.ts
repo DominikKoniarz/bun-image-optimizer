@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getImageCacheKey } from "./cache";
+import { getImageCacheKey } from "./cache-key";
 import {
     getConfig,
     IMAGE_PROCESSING_MAX_WAIT_MS,
