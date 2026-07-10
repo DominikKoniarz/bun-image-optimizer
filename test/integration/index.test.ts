@@ -6,9 +6,9 @@ import {
     expect,
     test,
 } from "bun:test";
-import { getImageCacheKey } from "../../src/cache";
-import { createImage, fetchImage } from "../../src/db-queries";
+import { getImageCacheKey } from "../../src/cache-key";
 import { Lock } from "../../src/lock";
+import { createImage, fetchImage } from "../../src/queries";
 import { redis } from "../../src/redis";
 import { startServer } from "../../src/server";
 import {

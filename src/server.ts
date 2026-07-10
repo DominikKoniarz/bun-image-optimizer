@@ -1,12 +1,11 @@
 import path from "node:path";
-import { getImageCacheKey } from "./cache";
+import { getImageCacheKey } from "./cache-key";
 import {
     getConfig,
     IMAGE_PROCESSING_MAX_WAIT_MS,
     IMAGE_PROCESSING_POLL_INTERVAL_MS,
     type Config,
 } from "./config";
-import { createImage, fetchImage } from "./db-queries";
 import { appError, toErrorResponse } from "./errors";
 import { fetchSourceImage } from "./fetcher";
 import { Lock } from "./lock";
@@ -15,6 +14,7 @@ import {
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
+import { createImage, fetchImage } from "./queries";
 import { redis } from "./redis";
 
 export const startServer = (config?: Partial<Config>) => {
