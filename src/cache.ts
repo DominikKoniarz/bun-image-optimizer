@@ -29,3 +29,7 @@ export const cacheImage = async (image: Image) => {
         CACHE_TTL_MS,
     );
 };
+
+export const invalidateCachedImage = async (cacheKey: string) => {
+    return redis.del(getRedisCacheKey("image", cacheKey));
+};

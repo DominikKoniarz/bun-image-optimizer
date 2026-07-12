@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { cacheImage, fetchCachedImage } from "./cache";
+import { cacheImage, fetchCachedImage, invalidateCachedImage } from "./cache";
 import { db } from "./drizzle";
 import { images } from "./schema";
 import type { Image } from "./types";
@@ -48,4 +48,15 @@ export const createImage = async (
     await cacheImage(image);
 
     return image;
+};
+
+export const updateImage = async (cacheKey: string) => {
+    await db
+        .update(images)
+        .set({
+            updatedAt: new Date(),
+        })
+        .where(eq(images.cacheKey, cacheKey));
+
+    await invalidateCachedImage(cacheKey);
 };
