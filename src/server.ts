@@ -14,7 +14,7 @@ import {
     parseImageSourceUrl,
     parseImageWidth,
 } from "./parser";
-import { createImage, fetchImage } from "./queries";
+import { createImage, fetchImage, updateImage } from "./queries";
 import { redis } from "./redis";
 
 export const startServer = (config?: Partial<Config>) => {
@@ -66,13 +66,16 @@ export const startServer = (config?: Partial<Config>) => {
 
                     const file = Bun.file(imagePath);
 
-                    if (image && (await file.exists())) {
+                    const fileExists = await file.exists();
+
+                    if (image && fileExists) {
                         return new Response(file, {
                             headers: {
                                 "Content-Type": file.type,
                                 "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
                                 "Cache-Control":
                                     "no-cache, no-store, must-revalidate", // TODO: to be changed
+                                "X-Cache-Status": "HIT",
                             },
                         });
                     }
@@ -108,12 +111,18 @@ export const startServer = (config?: Partial<Config>) => {
 
                             await optimizedImage.write(Bun.file(imagePath));
 
-                            await createImage(
-                                cacheKey,
-                                parsedUrl.url,
-                                width,
-                                quality,
-                            );
+                            // if the image is not in the database, we create it
+                            // image record could still be in the database but the file could be deleted (manually)
+                            if (!image) {
+                                await createImage(
+                                    cacheKey,
+                                    parsedUrl.url,
+                                    width,
+                                    quality,
+                                );
+                            } else {
+                                await updateImage(cacheKey);
+                            }
 
                             return new Response(optimizedImage, {
                                 headers: {
@@ -121,6 +130,8 @@ export const startServer = (config?: Partial<Config>) => {
                                     "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
                                     "Cache-Control":
                                         "no-cache, no-store, must-revalidate", // TODO: to be changed
+                                    "X-Cache-Status":
+                                        image && fileExists ? "HIT" : "MISS",
                                 },
                             });
                         } finally {
@@ -155,6 +166,7 @@ export const startServer = (config?: Partial<Config>) => {
                                         "Content-Disposition": `attachment; filename="${optimizedImageName}"`,
                                         "Cache-Control":
                                             "no-cache, no-store, must-revalidate", // TODO: to be changed
+                                        "X-Cache-Status": "HIT",
                                     },
                                 });
                             }

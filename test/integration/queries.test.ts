@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { eq } from "drizzle-orm";
 import { fetchCachedImage } from "../../src/cache";
 import { db } from "../../src/drizzle";
-import { createImage, fetchImage } from "../../src/queries";
+import { createImage, fetchImage, updateImage } from "../../src/queries";
 import { images } from "../../src/schema";
 import { cleanTestState } from "./cleanup";
 
@@ -70,5 +71,34 @@ describe("fetchImage", () => {
 
         expect(fetched).not.toBeNull();
         expect(fetched).toMatchObject(inserted ?? {});
+    });
+});
+
+describe("updateImage", () => {
+    test("updates updatedAt and invalidates redis cache", async () => {
+        const { cacheKey, sourceUrl, width, quality } = sampleImage;
+
+        const image = await createImage(cacheKey, sourceUrl, width, quality);
+
+        expect(await fetchCachedImage(cacheKey)).not.toBeNull();
+
+        await Bun.sleep(10);
+        await updateImage(cacheKey);
+
+        expect(await fetchCachedImage(cacheKey)).toBeNull();
+
+        const [updated] = await db
+            .select({ updatedAt: images.updatedAt })
+            .from(images)
+            .where(eq(images.cacheKey, cacheKey));
+
+        expect(updated?.updatedAt.getTime()).toBeGreaterThan(
+            image.updatedAt.getTime(),
+        );
+
+        const fetched = await fetchImage(cacheKey);
+
+        expect(fetched).not.toBeNull();
+        expect(fetched?.cacheKey).toBe(cacheKey);
     });
 });
