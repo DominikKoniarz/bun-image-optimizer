@@ -3,7 +3,15 @@ import { startServer } from "./server";
 const parsedPort = parseInt(process.env.PORT ?? "");
 const port = isNaN(parsedPort) ? undefined : parsedPort;
 
-const server = startServer({ port });
+const server = startServer({
+    port,
+    remotePatterns: [
+        {
+            protocol: "https",
+            hostname: "www.google.com",
+        },
+    ],
+});
 
 console.log(`Server is listening: ${server.url.href}`);
 

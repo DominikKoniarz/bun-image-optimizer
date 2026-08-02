@@ -140,6 +140,7 @@ export const startServer = (config?: Partial<Config>) => {
                     } else {
                         const startedAt = Date.now();
 
+                        // TODO: maybe add exponential backoff
                         while (
                             Date.now() - startedAt <
                             IMAGE_PROCESSING_MAX_WAIT_MS
