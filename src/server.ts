@@ -18,12 +18,22 @@ import { createImage, fetchImage, updateImage } from "./queries";
 import { redis } from "./redis";
 
 export const startServer = (config?: Partial<Config>) => {
-    const { port, dataDir } = getConfig(config);
+    const { port, dataDir, remotePatterns } = getConfig(config);
 
     return Bun.serve({
         routes: {
             "/image": {
                 GET: async (req) => {
+                    if (remotePatterns.length === 0) {
+                        return toErrorResponse(
+                            appError(
+                                "REMOTE_PATTERNS_NOT_CONFIGURED",
+                                "Remote patterns are not configured",
+                            ),
+                            500,
+                        );
+                    }
+
                     const { searchParams } = new URL(req.url);
 
                     const parsedUrl = parseImageSourceUrl(searchParams);
@@ -41,6 +51,23 @@ export const startServer = (config?: Partial<Config>) => {
                     if (!parsedQuality.valid) {
                         return toErrorResponse(parsedQuality.error, 400);
                     }
+
+                    // if (
+                    //     !remotePatterns.some((pattern) =>
+                    //         matchPathnamePattern(
+                    //             pattern.pathname,
+                    //             new URL(parsedUrl.url).pathname,
+                    //         ),
+                    //     )
+                    // ) {
+                    //     return toErrorResponse(
+                    //         appError(
+                    //             "REMOTE_PATTERN_NOT_FOUND",
+                    //             "Remote pattern not found",
+                    //         ),
+                    //         404,
+                    //     );
+                    // }
 
                     const cacheKey = getImageCacheKey(
                         parsedUrl.url,

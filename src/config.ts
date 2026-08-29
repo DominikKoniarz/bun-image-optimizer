@@ -1,4 +1,5 @@
 import { z } from "zod/mini";
+import { pathnamePatternIssue } from "./pathname";
 
 export const IMAGE_PROCESSING_MAX_WAIT_MS = 10_000;
 export const IMAGE_PROCESSING_POLL_INTERVAL_MS = 250;
@@ -19,11 +20,17 @@ const remotePatternSchema = z
             z.hostname(),
         ),
         port: z.optional(z.number().check(z.minimum(1), z.maximum(65535))),
-        // TODO: handle pathname (with wildcards */**)
         pathname: z.optional(
             z.string().check(
-                z.refine((value) => value.startsWith("/"), {
-                    message: "Pathname must start with a slash",
+                z.superRefine((value, ctx) => {
+                    const issue = pathnamePatternIssue(value);
+
+                    if (issue !== undefined) {
+                        ctx.addIssue({
+                            code: "custom",
+                            message: issue,
+                        });
+                    }
                 }),
             ),
         ),

@@ -8,7 +8,8 @@ const server = startServer({
     remotePatterns: [
         {
             protocol: "https",
-            hostname: "www.google.com",
+            hostname: "panel.wydawnictwoniezwykle.pl",
+            pathname: "/front/media/*",
         },
     ],
 });
