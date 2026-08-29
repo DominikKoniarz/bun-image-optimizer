@@ -36,7 +36,10 @@ export const fetchSourceImage = async (
 
         if (!response.ok) {
             return {
-                error: appError("SOURCE_FETCH_FAILED", "Failed to fetch source image"),
+                error: appError(
+                    "SOURCE_FETCH_FAILED",
+                    "Failed to fetch source image",
+                ),
                 arrayBuffer: null,
             };
         }

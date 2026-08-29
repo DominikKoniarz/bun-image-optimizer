@@ -127,7 +127,8 @@ export const parseImageQuality = (
             quality: null,
             error: appError(
                 "INVALID_QUALITY",
-                qualityResult.error.issues.at(0)?.message ?? "Validation failed",
+                qualityResult.error.issues.at(0)?.message ??
+                    "Validation failed",
             ),
         };
     }
