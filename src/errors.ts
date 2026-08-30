@@ -8,6 +8,7 @@ export const ErrorCode = {
     PROCESSING_TIMEOUT: "PROCESSING_TIMEOUT",
     NOT_FOUND: "NOT_FOUND",
     INTERNAL_ERROR: "INTERNAL_ERROR",
+    REMOTE_PATTERNS_NOT_CONFIGURED: "REMOTE_PATTERNS_NOT_CONFIGURED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

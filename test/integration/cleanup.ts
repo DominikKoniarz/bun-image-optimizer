@@ -19,5 +19,6 @@ export const getTestConfig = async () => {
     return {
         dataDir: testDataDir,
         port: await getAvailablePort(5000),
+        remotePatterns: [],
     };
 };

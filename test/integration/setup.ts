@@ -1,67 +1,33 @@
-import { RedisClient } from "bun";
-import { sql } from "drizzle-orm";
-import { db } from "../../src/drizzle";
-import { cleanTestState } from "./cleanup";
+import { afterAll } from "bun:test";
+import { migrate } from "drizzle-orm/bun-sql/migrator";
+import path from "node:path";
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+process.env.TESTCONTAINERS_RYUK_DISABLED = "true";
 
-const waitForPostgres = async (timeoutMs = 30_000) => {
-    const startedAt = Date.now();
+const { PostgreSqlContainer } = await import("@testcontainers/postgresql");
+const { RedisContainer } = await import("@testcontainers/redis");
 
-    while (Date.now() - startedAt < timeoutMs) {
-        try {
-            await db.execute(sql`SELECT 1`);
-            return;
-        } catch {
-            await wait(500);
-        }
-    }
+const POSTGRES_IMAGE = "postgres:18-alpine";
+const REDIS_IMAGE = "redis:8-alpine";
 
-    throw new Error("Postgres not ready");
-};
+const [postgres, redisContainer] = await Promise.all([
+    new PostgreSqlContainer(POSTGRES_IMAGE).start(),
+    new RedisContainer(REDIS_IMAGE).start(),
+]);
 
-const waitForRedis = async (redisUrl: string, timeoutMs = 30_000) => {
-    const startedAt = Date.now();
+process.env.DATABASE_URL = postgres.getConnectionUri();
+process.env.REDIS_URL = redisContainer.getConnectionUrl();
 
-    while (Date.now() - startedAt < timeoutMs) {
-        try {
-            const redis = new RedisClient(redisUrl);
-            await redis.ping();
-            redis.close();
-            return;
-        } catch {
-            await wait(500);
-        }
-    }
+const { db } = await import("../../src/drizzle");
+const { redis } = await import("../../src/redis");
+const { cleanTestState } = await import("./cleanup");
 
-    throw new Error("Redis not ready");
-};
-
-const runMigrations = async () => {
-    const proc = Bun.spawn(["bun", "run", "db:migrate"], {
-        env: process.env,
-        stdout: "inherit",
-        stderr: "inherit",
-    });
-
-    const exitCode = await proc.exited;
-
-    if (exitCode !== 0) {
-        throw new Error(`db:migrate failed with exit code ${exitCode}`);
-    }
-};
-
-const redisUrl = process.env.REDIS_URL;
-
-if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required for integration tests");
-}
-
-if (!redisUrl) {
-    throw new Error("REDIS_URL is required for integration tests");
-}
-
-await waitForPostgres();
-await waitForRedis(redisUrl);
-await runMigrations();
+await migrate(db, {
+    migrationsFolder: path.join(import.meta.dir, "../../migrations"),
+});
 await cleanTestState();
+
+afterAll(async () => {
+    redis.close();
+    await Promise.all([postgres.stop(), redisContainer.stop()]);
+});

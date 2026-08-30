@@ -9,14 +9,11 @@
         "lint": "eslint --max-warnings=0",
         "format": "prettier --write --config prettier.config.json .",
         "dev": "bun --watch src/index.ts",
-        "test": "bun run test:unit",
-        "test:dev": "bun run test:unit:dev",
+        "test": "bun run test:unit && bun run test:integration",
         "test:unit": "bun test ./test/unit",
         "test:unit:dev": "bun test ./test/unit --watch",
-        "test:integration": "bun test --env-file=.env.test --preload ./test/integration/setup.ts test/integration",
-        "test:integration:dev": "bun test --env-file=.env.test --preload ./test/integration/setup.ts --watch test/integration",
-        "test:integration:up": "docker compose -f docker-compose.test.yml --env-file .env.test up -d --wait",
-        "test:integration:down": "docker compose -f docker-compose.test.yml --env-file .env.test down -v",
+        "test:integration": "bun test --preload ./test/integration/setup.ts test/integration",
+        "test:integration:dev": "bun test --preload ./test/integration/setup.ts --watch test/integration",
         "compose:up": "docker compose up -d",
         "compose:down": "docker compose down",
         "db:migrate": "drizzle-kit migrate",
@@ -26,10 +23,12 @@
     "dependencies": {
         "drizzle-orm": "^0.45.2",
         "superjson": "^2.2.6",
-        "zod": "^4.4.3"
+        "zod": "^4.5.0"
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@testcontainers/postgresql": "^12.1.0",
+        "@testcontainers/redis": "^12.1.0",
         "@types/bun": "latest",
         "@types/node": "^25.9.1",
         "drizzle-kit": "^0.31.10",
@@ -42,5 +41,6 @@
     },
     "peerDependencies": {
         "typescript": "^5"
-    }
+    },
+    "packageManager": "bun@1.4.0"
 }
